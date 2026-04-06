@@ -1,0 +1,29 @@
+# Dependency installs
+node_modules/
+
+# Build artifacts
+dist/
+build/
+
+# Test coverage and temp files
+coverage/
+tmp/
+temp/
+
+# Environment / secrets
+.env
+.env.*
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# TypeScript incremental build info
+*.tsbuildinfo
+
+# OS metadata
+.DS_Store
+Thumbs.db
