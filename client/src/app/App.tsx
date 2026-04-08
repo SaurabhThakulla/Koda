@@ -1,6 +1,18 @@
 import './App.css'
 import { Editor } from '@monaco-editor/react'
+import { MonacoBinding } from 'y-monaco'
+import { useRef, useMemo } from 'react'
+import * as Y from 'yjs'
+import { SocketIOProvider } from 'y-scxocket.io'
+
 function App() {
+  const editorRef = useRef(null)
+  const ydoc = useMemo(() => new Y.Doc(), [])
+  const ytext = useMemo(() => ydoc.getText('monaco'), [ydoc])
+
+  const handleMount = (editor) => {
+    editorRef.current = editor
+  }
   return (
     <>
       <main className="h-screen w-full bg-gray-950 flex gap-4 p-2">
