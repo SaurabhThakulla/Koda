@@ -3,15 +3,23 @@ import { Editor } from '@monaco-editor/react'
 import { MonacoBinding } from 'y-monaco'
 import { useRef, useMemo } from 'react'
 import * as Y from 'yjs'
-import { SocketIOProvider } from 'y-scxocket.io'
+import { SocketIOProvider } from 'y-socket.io'
 
 function App() {
   const editorRef = useRef(null)
   const ydoc = useMemo(() => new Y.Doc(), [])
   const ytext = useMemo(() => ydoc.getText('monaco'), [ydoc])
 
-  const handleMount = (editor) => {
+  const handleMount = (editor: null) => {
     editorRef.current = editor
+
+    const provider = new SocketIOProvider('http://localhost:5000', 'monaco-demo', ydoc, { autoConnect: true})
+    const monacoBinding = new MonacoBinding(
+      ytext,
+      editorRef.current.getModel(),
+      new Set([editorRef.current]),
+      provider.awareness
+    )
   }
   return (
     <>
@@ -22,6 +30,7 @@ function App() {
             height="100%"
             defaultLanguage="javascript"
             defaultValue="// Write your code here"
+            onMount={handleMount}
           />
         </section>
       </main>
