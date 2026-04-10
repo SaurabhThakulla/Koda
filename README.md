@@ -66,7 +66,7 @@ koda/
 ### Clone the repository
 
 ```bash
-git clone https://github.com/your-username/koda.git
+git clone https://github.com/SaurabhThakulla/Koda.git
 cd koda
 ```
 
