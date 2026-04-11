@@ -16,40 +16,44 @@ function App() {
   const [users, setUsers] = useState<string[]>([])
   const ydoc = useMemo(() => new Y.Doc(), [])
   const ytext = useMemo(() => ydoc.getText('monaco'), [ydoc])
+  const provider = useMemo(
+    () => new SocketIOProvider('http://localhost:3000', 'monaco', ydoc, { autoConnect: true }),
+    [ydoc]
+  )
   
 
   useEffect(() => {
-    if (username && editorRef.current) {
-      const model = editorRef.current.getModel()
-      if (!model) return
+    if (!username) return
 
-      const provider = new SocketIOProvider('http://localhost:5000', 'monaco', ydoc, { autoConnect: true})
-      provider.awareness.setLocalStateField('user', { username })
-
-      provider.awareness.on('change', () => {
-        const states = Array.from(provider.awareness.getStates().values())
-        setUsers(states.filter(user=> user.username).map(user => user.user.username))
-        console.log('Active users:', states.map(state => state.user?.username).filter(Boolean))
-      })
-      function handlebeforeunload() {
-        provider.awareness.setLocalState("user", null)
-      }
-      window.addEventListener('beforeunload', handlebeforeunload)
-
-      new MonacoBinding(
-        ytext,
-        model,
-        new Set([editorRef.current]),
-        provider.awareness
+    const handleChange = () => {
+      const states = Array.from(provider.awareness.getStates().values())
+      setUsers(
+        states
+          .filter((state) => state.user?.username)
+          .map((state) => state.user.username)
       )
+      console.log('Active users:', states.map((state) => state.user?.username).filter(Boolean))
     }
 
-  }, [username, ydoc, ytext])
+    provider.awareness.setLocalStateField('user', { username })
+    provider.awareness.on('change', handleChange)
+    handleChange()
+
+    const handleBeforeUnload = () => {
+      provider.awareness.setLocalStateField('user', null)
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+      provider.awareness.off('change', handleChange)
+      provider.awareness.setLocalStateField('user', null)
+    }
+  }, [username, provider])
 
   const handleMount = (editor: MonacoEditor.IStandaloneCodeEditor) => {
     editorRef.current = editor
 
-    const provider = new SocketIOProvider('http://localhost:5000', 'monaco', ydoc, { autoConnect: true})
     const model = editor.getModel()
     if (!model) return
     
@@ -94,6 +98,7 @@ function App() {
       <main className="h-screen w-full bg-gray-950 flex gap-4 p-2">
         <aside className='h-full w-1/4 bg-amber-50 rounded-lg'>
           <div className='w-full h-10 bg-gray-500 text-amber-50 rounded-lg items-center p-1'>{username}</div>
+          <div className='w-full h-10 bg-gray-500 text-amber-50 rounded-lg items-center p-1'>{users.length > 0 ? `Users: ${users.join(', ')}` : 'No active users' }</div>
         </aside>
         <section className='h-full w-3/4 bg-neutral-50 rounded-lg'>
           <Editor
