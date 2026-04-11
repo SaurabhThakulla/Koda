@@ -1,7 +1,7 @@
 import './App.css'
 import type { editor as MonacoEditor } from 'monaco-editor'
 import { MonacoBinding } from 'y-monaco'
-import { useRef, useMemo, useState } from 'react'
+import { useRef, useMemo, useState, useEffect } from 'react'
 import * as Y from 'yjs'
 import { SocketIOProvider } from 'y-socket.io'
 import { Editor } from '@monaco-editor/react'
@@ -10,17 +10,46 @@ function App() {
   const editorRef = useRef<MonacoEditor.IStandaloneCodeEditor | null>(null)
   const [username, setUsername] = useState(() => {
     const params = new URLSearchParams(window.location.search)
-    return params.get('username') ?? ''
+    return params.get('username') || ''
   })
   const [pendingUsername, setPendingUsername] = useState('')
+  const [users, setUsers] = useState<string[]>([])
   const ydoc = useMemo(() => new Y.Doc(), [])
   const ytext = useMemo(() => ydoc.getText('monaco'), [ydoc])
   
 
+  useEffect(() => {
+    if (username && editorRef.current) {
+      const model = editorRef.current.getModel()
+      if (!model) return
+
+      const provider = new SocketIOProvider('http://localhost:5000', 'monaco', ydoc, { autoConnect: true})
+      provider.awareness.setLocalStateField('user', { username })
+
+      provider.awareness.on('change', () => {
+        const states = Array.from(provider.awareness.getStates().values())
+        setUsers(states.filter(user=> user.username).map(user => user.user.username))
+        console.log('Active users:', states.map(state => state.user?.username).filter(Boolean))
+      })
+      function handlebeforeunload() {
+        provider.awareness.setLocalState("user", null)
+      }
+      window.addEventListener('beforeunload', handlebeforeunload)
+
+      new MonacoBinding(
+        ytext,
+        model,
+        new Set([editorRef.current]),
+        provider.awareness
+      )
+    }
+
+  }, [username, ydoc, ytext])
+
   const handleMount = (editor: MonacoEditor.IStandaloneCodeEditor) => {
     editorRef.current = editor
 
-    const provider = new SocketIOProvider('http://localhost:5000', 'monaco-demo', ydoc, { autoConnect: true})
+    const provider = new SocketIOProvider('http://localhost:5000', 'monaco', ydoc, { autoConnect: true})
     const model = editor.getModel()
     if (!model) return
     
@@ -31,6 +60,7 @@ function App() {
       provider.awareness
     )
   }
+
 
   const handlejoin = (e) => {
     e.preventDefault()
