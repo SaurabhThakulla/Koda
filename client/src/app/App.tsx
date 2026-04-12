@@ -66,7 +66,7 @@ function App() {
   }
 
 
-  const handlejoin = (e) => {
+  const handlejoin = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const value = pendingUsername.trim()
     if (!value) return

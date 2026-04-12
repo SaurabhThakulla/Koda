@@ -1,11 +1,12 @@
 import express from 'express'
+import { stat } from 'fs'
 import {createServer} from 'http'
 import { Server } from 'socket.io'
 import {YSocketIO} from "y-socket.io/dist/server"
 
 const app = express()
 const httpServer = createServer(app)
-
+app.use(express.static('public'))
 const io=new Server(httpServer, {
     cors: {
         origin: "*",
@@ -29,6 +30,6 @@ app.get("/health", (req, res) => {
     })
 })
 
-httpServer.listen(3000, () => {
-  console.log('Server is listening on port 3000')
+httpServer.listen(5000, () => {
+  console.log('Server is listening on port 5000')
 })
