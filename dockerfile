@@ -1,26 +1,38 @@
-#Build the client
-FROM node:22-alpine as client-builder
+#SERVER
 
-COPY ./client /app
+FROM node:22-alpine as client
 
 WORKDIR /app
 
-RUN npm install
+COPY client/package*.json ./
+RUN npm ci
 
+COPY client/ ./
 RUN npm run build
 
-# Build the server
-FROM node:22-alpine as server-builder
 
-COPY ./server /app
+# SERVER
+
+FROM node:22-alpine as server
 
 WORKDIR /app
 
 COPY server/package*.json ./
+RUN npm ci
 
-RUN npm install
+COPY server/ ./
+RUN npm run build
 
-COPY --from=client-builder /app/dist /app/public
+#PRODUCTION
+FROM node:22-alpine as production
 
-CMD ["npx", "tsx", "server.js"]
+WORKDIR /app
 
+COPY --from=client /app/dist ./public
+COPY --from=server /app/dist ./dist
+COPY server/package*.json ./
+RUN npm ci --omit=dev
+
+EXPOSE  5000
+
+CMD ["node", "dist/server.js"]
