@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import * as Y from 'yjs'
 import { SocketIOProvider } from 'y-socket.io'
 import { Editor } from '@monaco-editor/react'
+import NotFound from './not-found'
 
 type ConnectionState = 'connecting' | 'connected' | 'disconnected'
 type RoomSession = {
@@ -73,6 +74,47 @@ function RoomWorkspace({ room, username, onLeave }: RoomSession & { onLeave: () 
     () => new SocketIOProvider(socketUrl, room, ydoc, { autoConnect: true }),
     [room, ydoc]
   )
+  const languages = [
+    // Web
+    { label: "JavaScript", value: "javascript" },
+    { label: "TypeScript", value: "typescript" },
+    { label: "HTML", value: "html" },
+    { label: "CSS", value: "css" },
+    { label: "SCSS", value: "scss" },
+    { label: "LESS", value: "less" },
+
+    // Backend     { label: "Python", value: "python" },
+    { label: "Java", value: "java" },
+    { label: "C", value: "c" },
+    { label: "C++", value: "cpp" },
+    { label: "C#", value: "csharp" },
+    { label: "Go", value: "go" },
+    { label: "Rust", value: "rust" },
+    { label: "PHP", value: "php" },
+
+    { label: "JSON", value: "json" },
+    { label: "YAML", value: "yaml" },
+    { label: "XML", value: "xml" },
+    { label: "Markdown", value: "markdown" },
+
+    { label: "SQL", value: "sql" },
+
+    { label: "Shell", value: "shell" },
+    { label: "PowerShell", value: "powershell" },
+    { label: "Dockerfile", value: "dockerfile" },
+
+    { label: "Kotlin", value: "kotlin" },
+    { label: "Swift", value: "swift" },
+    { label: "Objective-C", value: "objective-c" },
+    { label: "R", value: "r" },
+    { label: "Dart", value: "dart" },
+    { label: "Lua", value: "lua" },
+    { label: "Perl", value: "perl" },
+
+    { label: "Plain Text", value: "plaintext" }
+  ];
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState("");
 
   useEffect(() => {
     const { socket } = provider
@@ -216,7 +258,7 @@ function RoomWorkspace({ room, username, onLeave }: RoomSession & { onLeave: () 
       <div className="mx-auto flex h-[calc(100vh-48px)] max-w-7xl flex-col gap-4">
         <header className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-3">
-            <div className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-emerald-400 to-cyan-500 text-lg font-black text-slate-900 shadow-lg">
+            <div className="grid h-11 w-11 place-items-center rounded-2xl bg-linear-to-br from-emerald-400 to-cyan-500 text-lg font-black text-slate-900 shadow-lg">
               RM
             </div>
             <div>
@@ -237,6 +279,32 @@ function RoomWorkspace({ room, username, onLeave }: RoomSession & { onLeave: () 
             >
               Copy room code
             </button>
+
+            <div className="relative w-fit">
+              <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white"
+              >
+                {selectedLanguage || "Select Language"}
+              </button>
+
+              {isOpen && (
+                <div className="absolute mt-2 w-32 rounded-xl bg-slate-900 border border-white/10 shadow-lg overflow-y-auto max-h-60 z-10">
+                  {languages.map((lang) => (
+                    <div
+                      key={lang.value}
+                      onClick={() => {
+                        setSelectedLanguage(lang.label);
+                        setIsOpen(false);
+                      }}
+                      className="px-4 py-2 hover:bg-white/10 cursor-pointer"
+                    >
+                      {lang.label}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
             <button
               type="button"
               onClick={handleCopyInvite}
@@ -326,7 +394,7 @@ function RoomWorkspace({ room, username, onLeave }: RoomSession & { onLeave: () 
               <Editor
                 height="100%"
                 theme="vs-dark"
-                defaultLanguage="javascript"
+                defaultLanguage={languages[0].value}
                 defaultValue={`// Room ${room} is live with ${participantCount} participant(s).\n// Share the room code or invite link to bring someone in.\n\nfunction greet(name) {\n  return \`Hello, \${name}!\`\n}\n\nconsole.log(greet('${username}'));\n`}
                 onMount={handleMount}
                 options={{ padding: { top: 16 } }}
@@ -405,13 +473,25 @@ function App() {
   }
 
   if (session) {
-    return <RoomWorkspace room={session.room} username={session.username} onLeave={handleLeaveRoom} />
+    const isValidRoom = /^[A-Z0-9-]{4,9}$/.test(session.room)
+
+    if (!isValidRoom) {
+      return <NotFound />
+    }
+
+    return (
+      <RoomWorkspace
+        room={session.room}
+        username={session.username}
+        onLeave={handleLeaveRoom}
+      />
+    )
   }
 
   return (
     <main className="min-h-screen bg-pattern px-4 py-8 text-slate-50">
       <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-        <section className="glass overflow-hidden rounded-[2rem] border border-white/10 shadow-2xl">
+        <section className="glass overflow-hidden rounded-4xl border border-white/10 shadow-2xl">
           <div className="border-b border-white/10 bg-white/5 px-8 py-6">
             <p className="text-xs uppercase tracking-[0.24em] text-emerald-200/80">Frontend room flow</p>
             <h1 className="mt-3 max-w-lg text-4xl font-semibold leading-tight">
@@ -422,7 +502,7 @@ function App() {
             </p>
           </div>
 
-          <div className="grid gap-6 px-8 py-8 md:grid-cols-[1.15fr_0.85fr]">
+          <div className="grid gap-6 px-8 py-8">
             <form className="space-y-5" onSubmit={handleJoinRoom}>
               <div className="space-y-2">
                 <label className="text-sm text-slate-300" htmlFor="username">
@@ -458,7 +538,7 @@ function App() {
                 <button
                   type="button"
                   onClick={handleCreateRoom}
-                  className="rounded-2xl bg-gradient-to-r from-emerald-400 to-cyan-500 px-5 py-3 font-semibold text-slate-900 shadow-lg shadow-emerald-500/25 transition hover:-translate-y-0.5"
+                  className="rounded-2xl bg-linear-to-r from-emerald-400 to-cyan-500 px-5 py-3 font-semibold text-slate-900 shadow-lg shadow-emerald-500/25 transition hover:-translate-y-0.5"
                 >
                   Create room
                 </button>
@@ -476,7 +556,7 @@ function App() {
             </form>
 
             <div className="space-y-4 rounded-[1.75rem] border border-white/10 bg-slate-950/35 p-5">
-              <div className="rounded-[1.5rem] border border-emerald-300/15 bg-gradient-to-br from-emerald-400/15 via-cyan-300/10 to-transparent p-5">
+              <div className="rounded-3xl border border-emerald-300/15 bg-linear-to-br from-emerald-400/15 via-cyan-300/10 to-transparent p-5">
                 <p className="text-xs uppercase tracking-[0.24em] text-emerald-200/80">Invite flow</p>
                 <p className="mt-3 text-xl font-semibold">Create it, copy it, share it.</p>
                 <p className="mt-2 text-sm text-slate-300">
@@ -502,7 +582,7 @@ function App() {
           </div>
         </section>
 
-        <aside className="glass flex flex-col justify-between rounded-[2rem] border border-white/10 p-8 shadow-2xl">
+        <aside className="glass flex flex-col justify-between rounded-4xl border border-white/10 p-8 shadow-2xl">
           <div>
             <p className="text-xs uppercase tracking-[0.24em] text-slate-400">Ready to join</p>
             <p className="mt-3 text-2xl font-semibold leading-tight">
